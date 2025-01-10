@@ -17,3 +17,5 @@ git push origin
 
 #zur Überprüfung
 git Status 
+
+Änderung überprüfen
