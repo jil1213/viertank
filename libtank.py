@@ -8,6 +8,7 @@ from scipy.linalg import solve_continuous_are
 from scipy.linalg import solve_discrete_are
 from scipy.signal import cont2discrete
 
+
 class struct:
     pass;
 
@@ -308,7 +309,6 @@ class VierTank:
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         # Füllstandsunterschiede und Abflüsse berechnen, um Abflussraten zwischen den Tanks zu bestimmen
         # diese werden implizit in der Funktion get_outflow_from_level berechnet
-        # somit können im folgenden die Ableitungen (=Zustandsänderungen) korrekt berechnet werden
         q01 = self.get_flow_from_input(1, u[0])
         q02 = self.get_flow_from_input(2, u[1])
         q12 = self.get_outflow_from_level(1, 2, x[0])
@@ -318,10 +318,8 @@ class VierTank:
         q34 = self.get_outflow_from_level(3, 4, x[2])
         q30 = self.get_outflow_from_level(3, 5, x[2])
         q40 = self.get_outflow_from_level(4, 5, x[3])
-        #Hier sollten die korrekten Ableitungen berechnet und zurückgegebenn werden ##Kann ich das mit AT machen oder muss ich den Fall aus der Angabe nach Gl.4 auf S.3 berücksichtigen? 
-        
-        # Fallunterscheidung für Füllstand
 
+        # Fallunterscheidung für Füllstand
         if x[0] > -self.st.hV and x[0] < 0:
             A1 = self.st.AT  # Standard-Tankquerschnitt (oberhalb Ventilniveau)
         else:
@@ -343,7 +341,7 @@ class VierTank:
             A4 = self.st.AR
         
         
-        
+        # Aufstellen der Bewegungsgleichungen nach Gl. 4a-d
         dx=np.zeros_like(x)
       
         dx[0] = (q01 - q12 - q13) / A1
@@ -404,12 +402,15 @@ class VierTank:
         #  2: maximaler Füllstand eines Tanks überschritten
         #  4: maximale Pumpenspannung überschritten
 
+        # Ausgang in der Angabe gegeben zu 
         x[2] = y[0]
         x[3] = y[1]
+        #x1 und x2 können über die Füllstände Q24 und Q13 bestimmt werden (diese lassen sich aus Tank 3 und 4 berechnen)
         Q24 = self.get_outflow_from_level(4,5,x[3])-self.get_outflow_from_level(3,4,x[2]) # Q40-Q34 = Q24 -> Ausgänge y für Q40 und Q34 bekannt, Bestimmung für x2
         x[1] = self.get_level_from_outflow(2,4, Q24)
         Q13 = self.get_outflow_from_level(3,4,x[2])+self.get_outflow_from_level(3,5,x[2])-self.get_outflow_from_level(2,3,x[1]) # Q34 + Q30 -Q23 = Q13 -> Bestimmung für x1
         x[0] = self.get_level_from_outflow(1,3, Q13)
+        # Eingänge können über Bewegungsgleichungen 4a und b bestimmt werden
         Q01 = self.get_outflow_from_level (1,2,x[0])+self.get_outflow_from_level (1,3,x[0]) # Q12 + Q13 = Q01
         u[0] = self.get_input_from_flow(1,Q01)
         Q02 = self.get_outflow_from_level(2,3,x[1])+self.get_outflow_from_level(2,4,x[1])-self.get_outflow_from_level (1,2,x[0]) # Q23 + Q24 - Q12 = Q02
@@ -433,51 +434,24 @@ class VierTank:
 
         return equi
         
-    def linearize(self,equi,debug=False):
+    def linearize(self,equi, debug=False):
         # Berechnung der Systemmatrizen des linearen Systems
 
         ######-------!!!!!!Aufgabe!!!!!!-------------########
+        dx = self.model(0, equi.x, lambda t, x: equi.u)
+
+        # Jacobi berechnen jacobian geht nur mit sympy matrizen- Wie hier umsetzung?
+        #A = dx.jacobian(equi.x)
+        #B = dx.jacobian(equi.u)
+        
+        #einsetzen der Ruhelage 1 
+        #A = A.subs(equi.x)
+        #B = B.subs(equi.u)
         #Hier die sollten die korrekten Matrizen angegeben werden
         A=np.zeros((4,4))
         B=np.zeros((4,2))
         C=np.zeros((2,4))
         D=np.zeros((2,2))
-
-        # Compute A matrix
-        for i in range(4):
-            for j in range(4):
-                x_perturbed = equi.x.copy()
-                x_perturbed[j] += 1e-6
-                dx_perturbed = self.model(0, x_perturbed, lambda t, x: equi.u)
-                dx_base = self.model(0, equi.x, lambda t, x: equi.u)
-                A[i, j] = (dx_perturbed[i] - dx_base[i]) / 1e-6
-
-        # Compute B matrix
-        for i in range(4):
-            for j in range(2):
-                u_perturbed = equi.u.copy()
-                u_perturbed[j] += 1e-6
-                dx_perturbed = self.model(0, equi.x, lambda t, x: u_perturbed)
-                dx_base = self.model(0, equi.x, lambda t, x: equi.u)
-                B[i, j] = (dx_perturbed[i] - dx_base[i]) / 1e-6
-
-        # Compute C matrix
-        for i in range(2):
-            for j in range(4):
-                x_perturbed = equi.x.copy()
-                x_perturbed[j] += 1e-6
-                y_perturbed = self.output(0, x_perturbed, lambda t, x: equi.u)
-                y_base = self.output(0, equi.x, lambda t, x: equi.u)
-                C[i, j] = (y_perturbed[i] - y_base[i]) / 1e-6
-
-        # Compute D matrix
-        for i in range(2):
-            for j in range(2):
-                u_perturbed = equi.u.copy()
-                u_perturbed[j] += 1e-6
-                y_perturbed = self.output(0, equi.x, lambda t, x: u_perturbed)
-                y_base = self.output(0, equi.x, lambda t, x: equi.u)
-                D[i, j] = (y_perturbed[i] - y_base[i]) / 1e-6
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         
