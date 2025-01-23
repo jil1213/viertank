@@ -438,7 +438,18 @@ class VierTank:
         # Berechnung der Systemmatrizen des linearen Systems
 
         ######-------!!!!!!Aufgabe!!!!!!-------------########
-        dx = self.model(0, equi.x, lambda t, x: equi.u)
+        dx = self.model(0, equi.x, lambda t, x: equi.u) # mein Versuch
+        x = equi.x
+        y = equi.y
+        u = equi.u
+        if u[0]>0:
+            du1 = self.st.Ku1
+        else:
+            du1 = 0
+        if u[1]>0:
+            du2 = self.st.Ku2
+        else:
+            du2 = 0
 
         # Jacobi berechnen jacobian geht nur mit sympy matrizen- Wie hier umsetzung?
         #A = dx.jacobian(equi.x)
@@ -452,6 +463,20 @@ class VierTank:
         B=np.zeros((4,2))
         C=np.zeros((2,4))
         D=np.zeros((2,2))
+        A = np.array([[(-self.AS[0,1]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV))-self.AS[0,2]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV))),0,0,0],
+                        [self.AS[0,1]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV)), (-self.AS[1,2]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV))-self.AS[1,3]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV))),0,0],
+                        [self.AS[0,2]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV)), self.AS[1,2]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV)), (-self.AS[2,3]self.st.g/np.sqrt(2*self.st.g(x[2]+self.st.hV))-self.AS[2,4]self.st.g/np.sqrt(2*self.st.g(x[2]+self.st.hV))),0],
+                        [0, self.AS[1,3]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV)), self.AS[2,3]self.st.g/np.sqrt(2*self.st.g(x[2]+self.st.hV)),-self.AS[3,4]self.st.g/np.sqrt(2*self.st.g(x[3]+self.st.hV))]])
+        B=np.zeros((4,2))
+        B=np.array([[du1, 0],
+                    [0, du2],
+                    [0, 0],
+                    [0, 0]])
+        C=np.zeros((2,4))
+        C=np.array([[0, 0, 1, 0],
+                   [0, 0, 0, 1]])
+        D=np.zeros((2,2))
+
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         
