@@ -459,20 +459,17 @@ class VierTank:
         #A = A.subs(equi.x)
         #B = B.subs(equi.u)
         #Hier die sollten die korrekten Matrizen angegeben werden
-        A=np.zeros((4,4))
-        B=np.zeros((4,2))
-        C=np.zeros((2,4))
-        D=np.zeros((2,2))
-        A = np.array([[(-self.AS[0,1]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV))-self.AS[0,2]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV))),0,0,0],
-                        [self.AS[0,1]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV)), (-self.AS[1,2]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV))-self.AS[1,3]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV))),0,0],
-                        [self.AS[0,2]self.st.g/np.sqrt(2*self.st.g(x[0]+self.st.hV)), self.AS[1,2]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV)), (-self.AS[2,3]self.st.g/np.sqrt(2*self.st.g(x[2]+self.st.hV))-self.AS[2,4]self.st.g/np.sqrt(2*self.st.g(x[2]+self.st.hV))),0],
-                        [0, self.AS[1,3]self.st.g/np.sqrt(2*self.st.g(x[1]+self.st.hV)), self.AS[2,3]self.st.g/np.sqrt(2*self.st.g(x[2]+self.st.hV)),-self.AS[3,4]self.st.g/np.sqrt(2*self.st.g(x[3]+self.st.hV))]])
-        B=np.zeros((4,2))
+        
+        A = np.array([[(-self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)) - self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV))), 0, 0, 0],
+              [self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)), (-self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)) - self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV))), 0, 0],
+              [self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)), self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)), (-self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)) - self.st.AS30 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV))), 0],
+              [0, self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)), self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)), -self.st.AS40 * self.st.g / np.sqrt(2 * self.st.g * (x[3] + self.st.hV))]])/self.st.AT
+        
         B=np.array([[du1, 0],
                     [0, du2],
                     [0, 0],
                     [0, 0]])
-        C=np.zeros((2,4))
+        
         C=np.array([[0, 0, 1, 0],
                    [0, 0, 0, 1]])
         D=np.zeros((2,2))
