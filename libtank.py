@@ -460,20 +460,27 @@ class VierTank:
         #B = B.subs(equi.u)
         #Hier die sollten die korrekten Matrizen angegeben werden
         
+
+        #Hier die sollten die korrekten Matrizen angegeben werden
+        A=np.zeros((4,4))
+        B=np.zeros((4,2))
+        C=np.zeros((2,4))
+        D=np.zeros((2,2))
+
+        # Variablen für Zwischenwerte erstellen, l für linearisiert
         A = np.array([[(-self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)) - self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV))), 0, 0, 0],
               [self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)), (-self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)) - self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV))), 0, 0],
               [self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)), self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)), (-self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)) - self.st.AS30 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV))), 0],
               [0, self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)), self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)), -self.st.AS40 * self.st.g / np.sqrt(2 * self.st.g * (x[3] + self.st.hV))]])/self.st.AT
         
-        B=np.array([[du1, 0],
-                    [0, du2],
+        B=np.array([[du1/self.st.AT, 0],
+                    [0, du2/self.st.AT],
                     [0, 0],
                     [0, 0]])
         
         C=np.array([[0, 0, 1, 0],
                    [0, 0, 0, 1]])
         D=np.zeros((2,2))
-
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         
@@ -624,10 +631,8 @@ class ContinuousFlatnessBasedTrajectory:
             
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier bitte benötigte Zeilen wieder "dekommentieren" und Rest löschen
-        #self.A_rnf, Brnf, Crnf, self.M, self.Q, S = mimo_rnf(linearized_system.A, linearized_system.B, linearized_system.C, kronecker)
-        self.A_rnf=np.zeros((4,4))
-        self.M=np.eye(2)
-        self.Q=np.eye(4)
+        self.A_rnf, Brnf, Crnf, self.M, self.Q, S = mimo_rnf(linearized_system.A, linearized_system.B, linearized_system.C, kronecker)
+       
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
 
         #Umrechnung stationäre Werte zwischen Ausgang und flachem Ausgang
@@ -635,8 +640,17 @@ class ContinuousFlatnessBasedTrajectory:
         #Hier sollten die korrekten Anfangs und Endwerte für den flachen Ausgang berechnet werden
         #Achtung: Hier sollten alle werte relativ zum Arbeitspunkt angegeben werden
 
-        self.eta_a=np.zeros_like(ya_rel)
-        self.eta_b=np.zeros_like(yb_rel)
+        Crnfred = np.delete(Crnf, [1, 3], axis=1) # wir löschen die Spalten mit Null einträgen -> die 2. und 4. Spalte
+
+        # C_rnf reduziert, da alle Ableitungen von eta gleich 0
+
+
+        #self.eta_a=np.zeros_like(ya_rel)
+        #self.eta_b=np.zeros_like(yb_rel)
+        
+        self.eta_a=np.linalg.inv(Crnfred)@ya_rel
+        self.eta_b=np.linalg.inv(Crnfred)@yb_rel
+        
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
 
@@ -655,7 +669,15 @@ class ContinuousFlatnessBasedTrajectory:
         dim_x=np.size(self.linearized_system.x_equi)
         dim_t=np.size(tv)
         ######-------!!!!!!Aufgabe!!!!!!-------------########
-        state=np.zeros((dim_x,dim_t))
+        #state=np.zeros((dim_x,dim_t))
+        eta=list()
+        for index in range(dim_x-2):
+            eta=eta+[self.flat_output(tv,index,deri) for deri in range(self.kronecker[index])]# dim_x=4, aber for fängt bei 0 an -> wir brauchen 3 Durchläufe, deswegen dim_x-2
+        xrnf=np.vstack(eta)
+        xrel=(np.linalg.inv(self.Q)@xrnf) #Q=Transformationsmatrix; zustand relativ zum arbeitspunkt
+        state=xrel+self.linearized_system.x_equi.reshape((dim_x,1)) # zustand absolut zur ruhelage
+        if (np.isscalar(t)):
+            state=state[:,0]
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         if np.isscalar(t):
             state = state.flatten()
