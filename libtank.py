@@ -103,7 +103,10 @@ class DiscreteLinearizedSystem(LinearizedSystem):
             _type_: _description_
         """        ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier sollten die korrekten Reglerverstärkungen berechnet werden
-        K_lqr=np.zeros((R.shape[0],Q.shape[0]))
+        #K_lqr=np.zeros((R.shape[0],Q.shape[0]))
+        P=solve_continuous_are(self.A,self.B,Q,R) #Parametrierung des Reglers aus Ricatti DGL
+        
+        K_lqr=np.linalg.inv(R)@(self.B.transpose()@P)
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         return K_lqr
 
@@ -121,7 +124,11 @@ class ContinuousLinearizedSystem(LinearizedSystem):
         assert(Ta>0)
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         ##bitte korrigieren und die korrekten diskreten Systemmatrizen bestimmen
-        sysd = DiscreteLinearizedSystem(self.A,self.B,self.C,self.D,self.x_equi,self.u_equi,self.y_equi,Ta)
+        A_d=sla.expm(self.A*Ta) # jeder Wert der Matrix A wird mit Ta mulipliziert
+        B_d=np.linalg.inv(self.A)@(A_d-np.eye(4))@self.B
+        C_d=self.C
+        D_d=self.D
+        sysd = DiscreteLinearizedSystem(A_d,B_d,C_d,D_d,self.x_equi,self.u_equi,self.y_equi,Ta)
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         return sysd
 
@@ -129,7 +136,9 @@ class ContinuousLinearizedSystem(LinearizedSystem):
     def lqr(self,Q,R):
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier sollten die korrekten Reglerverstärkungen berechnet werden
-        K_lqr=np.zeros((R.shape[0],Q.shape[0]))
+        #K_lqr=np.zeros((R.shape[0],Q.shape[0]))#
+        P=solve_continuous_are(self.A,self.B,Q,R) #Parametrierung des Reglers aus Ricatti DGL
+        K_lqr=np.linalg.inv(R)@(self.B.transpose()@P)
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         return K_lqr
 
@@ -749,10 +758,10 @@ class DiscreteFlatnessBasedTrajectory:
         #Matrizen der Regelungsnormalform holen
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier bitte benötigte Zeilen wieder "einkommentieren" und Rest löschen
-        #self.A_rnf, Brnf, Crnf, self.M, self.Q, S = mimo_rnf(linearized_system.A, linearized_system.B, linearized_system.C, kronecker)
-        self.A_rnf=np.zeros((3,3))
-        self.M=np.eye(2)
-        self.Q=np.eye(3)
+        self.A_rnf, Brnf, Crnf, self.M, self.Q, S = mimo_rnf(linearized_system.A, linearized_system.B, linearized_system.C, kronecker)
+        #self.A_rnf=np.zeros((3,3))
+        #self.M=np.eye(2)
+        #self.Q=np.eye(3)
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
 
         #Umrechnung stationäre Werte zwischen Ausgang und flachem Ausgang
@@ -760,9 +769,13 @@ class DiscreteFlatnessBasedTrajectory:
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier sollten die korrekten Anfangs und Endwerte für den flachen Ausgang berechnet werden
         #Achtung: Hier sollten alle Werte relativ zum Arbeitspunkt angegeben werden
-
-        self.eta_a=np.zeros_like(ya_rel)
-        self.eta_b=np.zeros_like(yb_rel)
+        Crnfred=np.array([[Crnf[0,0]+Crnf[0,1],Crnf[0,2]+Crnf[0, 3]],[Crnf[1,0]+Crnf[1,1],Crnf[1,2]+Crnf[1, 3]]])
+        #Crnfred = np.delete(Crnf, [1, 3], axis=1)
+        #self.eta_a=np.zeros_like(ya_rel)
+        #self.eta_b=np.zeros_like(yb_rel)
+        
+        self.eta_a=np.linalg.inv(Crnfred)@ya_rel
+        self.eta_b=np.linalg.inv(Crnfred)@yb_rel
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
 
@@ -778,8 +791,9 @@ class DiscreteFlatnessBasedTrajectory:
 
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier sollten die korrekten Werte für die um "shift" nach links verschobene Trajektorie des flachen Ausgangs zurückgegeben werden
-
-        eta= np.zeros_like(k)
+        tau = (k-shift)/ (self.N-shift)
+        return self.eta_a[index] + (self.eta_b[index] - self.eta_a[index]) * poly_transition(tau,0,self.maxderi[index])
+        #eta= np.zeros_like(k)
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         return eta
@@ -791,7 +805,14 @@ class DiscreteFlatnessBasedTrajectory:
         dim_x=np.size(self.linearized_system.x_equi)
         dim_k=np.size(k)
         ######-------!!!!!!Aufgabe!!!!!!-------------########
-        state=np.zeros((dim_x,dim_k))
+        eta=list()
+        for index in range(dim_x-2):
+            eta=eta+[self.flat_output(kv,index,deri) for deri in range(self.kronecker[index])]# dim_x=4, aber for fängt bei 0 an -> wir brauchen 3 Durchläufe, deswegen dim_x-2
+        xrnf=np.vstack(eta)
+        xrel=(np.linalg.inv(self.Q)@xrnf) #Q=Transformationsmatrix; zustand relativ zum arbeitspunkt
+        state=xrel+self.linearized_system.x_equi.reshape((dim_x,1)) # zustand absolut zur ruhelage
+        if (np.isscalar(k)):
+            state=state[:,0]
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         if np.isscalar(k):
             state = state.flatten()
@@ -827,7 +848,17 @@ class DiscreteFlatnessBasedTrajectory:
         dim_k=np.size(kv)
         
         ######-------!!!!!!Aufgabe!!!!!!-------------########
-        input=np.zeros((dim_u,dim_k))
+       # input=np.zeros((dim_u,dim_k))
+        
+        eta=list()
+       
+        for index in range(dim_u):
+            eta=eta+[self.flat_output(kv,index,deri) for deri in range(self.kronecker[index])]
+        xrnf=np.vstack(eta)
+        v=-self.A_rnf[self.kronecker.cumsum()-1,:]@xrnf
+        for jj in range(self.kronecker.shape[0]):
+            v[jj,:]+=self.flat_output(kv,jj,self.kronecker[jj])
+        input=(np.linalg.inv(self.M)@v)+self.linearized_system.u_equi.reshape((dim_u,1))
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         if (np.isscalar(k)):
             input=input[:,0]
