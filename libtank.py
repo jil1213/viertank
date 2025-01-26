@@ -681,10 +681,10 @@ class ContinuousFlatnessBasedTrajectory:
         #state=np.zeros((dim_x,dim_t))
         eta=list()
         for index in range(dim_x-2):
-            eta=eta+[self.flat_output(tv,index,deri) for deri in range(self.kronecker[index])]# dim_x=4, aber for fängt bei 0 an -> wir brauchen 3 Durchläufe, deswegen dim_x-2
+            eta=eta+[self.flat_output(tv,index,deri) for deri in range(self.kronecker[index])]# Berechnung von eta und zeitlichen Ableitungen von eta, dim_x=4, aber for fängt bei 0 an -> wir brauchen 3 Durchläufe = zeitlche Ableitungen, deswegen dim_x-2
         xrnf=np.vstack(eta)
-        xrel=(np.linalg.inv(self.Q)@xrnf) #Q=Transformationsmatrix; zustand relativ zum arbeitspunkt
-        state=xrel+self.linearized_system.x_equi.reshape((dim_x,1)) # zustand absolut zur ruhelage
+        xrel=(np.linalg.inv(self.Q)@xrnf) #Q=Transformationsmatrix; zustand relativ zum arbeitspunkt, abweichung von System
+        state=xrel+self.linearized_system.x_equi.reshape((dim_x,1)) # zustand absolut zur ruhelage=tatsächlicher Zustand
         if (np.isscalar(t)):
             state=state[:,0]
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
