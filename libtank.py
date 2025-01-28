@@ -471,19 +471,41 @@ class VierTank:
         
 
         #Hier die sollten die korrekten Matrizen angegeben werden
-        A=np.zeros((4,4))
-        B=np.zeros((4,2))
-        C=np.zeros((2,4))
-        D=np.zeros((2,2))
+        #A=np.zeros((4,4))
+        #B=np.zeros((4,2))
+        #C=np.zeros((2,4))
+        #D=np.zeros((2,2))
+
+        # Fallunterscheidung für Füllstand
+        if x[0] > -self.st.hV and x[0] < 0:
+            A1 = self.st.AT  # Standard-Tankquerschnitt (oberhalb Ventilniveau)
+        else:
+            A1 = 2 * self.st.AR  # Querschnitt der Abflussschläuche (unterhalb Ventilniveau)
+
+        if x[1] > -self.st.hV and x[0] < 0:
+            A2 = self.st.AT
+        else:
+            A2 = 2 * self.st.AR
+
+        if x[2] > -self.st.hV and x[0] < 0:
+            A3 = self.st.AT
+        else:
+            A3 = 2 * self.st.AR
+
+        if x[3] > -self.st.hV and x[0] < 0:
+            A4 = self.st.AT
+        else:
+            A4 = self.st.AR
+
 
         # Variablen für Zwischenwerte erstellen, l für linearisiert
-        A = np.array([[(-self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)) - self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV))), 0, 0, 0],
-              [self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)), (-self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)) - self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV))), 0, 0],
-              [self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)), self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)), (-self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)) - self.st.AS30 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV))), 0],
-              [0, self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)), self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)), -self.st.AS40 * self.st.g / np.sqrt(2 * self.st.g * (x[3] + self.st.hV))]])/self.st.AT
+        A = np.array([[(-self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)) - self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/A1, 0, 0, 0],
+              [(self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/A2, (-self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)) - self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/A2, 0, 0],
+              [(self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/A3, (self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/A3, (-self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)) - self.st.AS30 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)))/A3, 0],
+              [0, (self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/A4, self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV))/A4, (-self.st.AS40 * self.st.g / np.sqrt(2 * self.st.g * (x[3] + self.st.hV)))/A4]])
         
-        B=np.array([[du1/self.st.AT, 0],
-                    [0, du2/self.st.AT],
+        B=np.array([[du1/A1, 0],
+                    [0, du2/A2],
                     [0, 0],
                     [0, 0]])
         
