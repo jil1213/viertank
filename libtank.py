@@ -675,13 +675,10 @@ class ContinuousFlatnessBasedTrajectory:
 
         # C_rnf reduziert, da alle Ableitungen von eta gleich 0
 
-
-        #self.eta_a=np.zeros_like(ya_rel)
-        #self.eta_b=np.zeros_like(yb_rel)
-        
+        #Etas nach der Berechnungsvorschrift aus der Dokumentation 2b) berechnen 
         self.eta_a=np.linalg.inv(Crnfred)@ya_rel
         self.eta_b=np.linalg.inv(Crnfred)@yb_rel
-        
+
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
 
