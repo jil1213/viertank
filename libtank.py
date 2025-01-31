@@ -325,38 +325,27 @@ class VierTank:
         q23 = self.get_outflow_from_level(2, 3, x[1])
         q24 = self.get_outflow_from_level(2, 4, x[1])
         q34 = self.get_outflow_from_level(3, 4, x[2])
-        q30 = self.get_outflow_from_level(3, 5, x[2])
-        q40 = self.get_outflow_from_level(4, 5, x[3])
+        q30 = self.get_outflow_from_level(3, 0, x[2])
+        q40 = self.get_outflow_from_level(4, 0, x[3])
 
-        # Fallunterscheidung für Füllstand
-        if x[0] > -self.st.hV and x[0] < 0:
-            A1 = self.st.AT  # Standard-Tankquerschnitt (oberhalb Ventilniveau)
-        else:
-            A1 = 2 * self.st.AR  # Querschnitt der Abflussschläuche (unterhalb Ventilniveau)
-
-        if x[1] > -self.st.hV and x[0] < 0:
-            A2 = self.st.AT
-        else:
-            A2 = 2 * self.st.AR
-
-        if x[2] > -self.st.hV and x[0] < 0:
-            A3 = self.st.AT
-        else:
-            A3 = 2 * self.st.AR
-
-        if x[3] > -self.st.hV and x[0] < 0:
-            A4 = self.st.AT
-        else:
-            A4 = self.st.AR
+        Area = np.zeros(len(x))
+        for i in range(len(x)):
+            if x[i] > 0:
+                Area[i] = self.st.AT
+            else:
+                if i == 4:
+                    Area[i] = self.st.AR
+                else:
+                    Area[i] = self.st.AR*2
         
         
         # Aufstellen der Bewegungsgleichungen nach Gl. 4a-d
         dx=np.zeros_like(x)
       
-        dx[0] = (q01 - q12 - q13) / A1
-        dx[1] = (q02 + q12 - q23 - q24) / A2
-        dx[2] = (q13 + q23 - q34 - q30) / A3
-        dx[3] = (q24 + q34 - q40) / A4
+        dx[0] = (q01 - q12 - q13) / Area[0]
+        dx[1] = (q02 + q12 - q23 - q24) / Area[1]
+        dx[2] = (q13 + q23 - q34 - q30) / Area[2]
+        dx[3] = (q24 + q34 - q40) / Area[3]
 
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         return dx
@@ -476,36 +465,26 @@ class VierTank:
         #C=np.zeros((2,4))
         #D=np.zeros((2,2))
 
-        # Fallunterscheidung für Füllstand
-        if x[0] > -self.st.hV and x[0] < 0:
-            A1 = self.st.AT  # Standard-Tankquerschnitt (oberhalb Ventilniveau)
-        else:
-            A1 = 2 * self.st.AR  # Querschnitt der Abflussschläuche (unterhalb Ventilniveau)
-
-        if x[1] > -self.st.hV and x[0] < 0:
-            A2 = self.st.AT
-        else:
-            A2 = 2 * self.st.AR
-
-        if x[2] > -self.st.hV and x[0] < 0:
-            A3 = self.st.AT
-        else:
-            A3 = 2 * self.st.AR
-
-        if x[3] > -self.st.hV and x[0] < 0:
-            A4 = self.st.AT
-        else:
-            A4 = self.st.AR
+       
+        Area = np.zeros(len(equi.x))
+        for i in range(len(equi.x)):
+            if equi.x[i] > 0:
+                Area[i] = self.st.AT
+            else:
+                if i == 4:
+                    Area[i] = self.st.AR
+                else:
+                    Area[i] = self.st.AR*2
 
 
         # Variablen für Zwischenwerte erstellen, l für linearisiert
-        A = np.array([[(-self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)) - self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/A1, 0, 0, 0],
-              [(self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/A2, (-self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)) - self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/A2, 0, 0],
-              [(self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/A3, (self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/A3, (-self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)) - self.st.AS30 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)))/A3, 0],
-              [0, (self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/A4, self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV))/A4, (-self.st.AS40 * self.st.g / np.sqrt(2 * self.st.g * (x[3] + self.st.hV)))/A4]])
+        A = np.array([[(-self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)) - self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/Area[0], 0, 0, 0],
+              [(self.st.AS12 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/Area[1], (-self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)) - self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/Area[1], 0, 0],
+              [(self.st.AS13 * self.st.g / np.sqrt(2 * self.st.g * (x[0] + self.st.hV)))/Area[2], (self.st.AS23 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/Area[2], (-self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)) - self.st.AS30 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV)))/Area[2], 0],
+              [0, (self.st.AS24 * self.st.g / np.sqrt(2 * self.st.g * (x[1] + self.st.hV)))/Area[3], self.st.AS34 * self.st.g / np.sqrt(2 * self.st.g * (x[2] + self.st.hV))/Area[3], (-self.st.AS40 * self.st.g / np.sqrt(2 * self.st.g * (x[3] + self.st.hV)))/Area[3]]])
         
-        B=np.array([[du1/A1, 0],
-                    [0, du2/A2],
+        B=np.array([[du1/Area[0], 0],
+                    [0, du2/Area[1]],
                     [0, 0],
                     [0, 0]])
         
