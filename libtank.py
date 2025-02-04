@@ -137,8 +137,11 @@ class ContinuousLinearizedSystem(LinearizedSystem):
         ######-------!!!!!!Aufgabe!!!!!!-------------########
         #Hier sollten die korrekten Reglerverstärkungen berechnet werden
         #K_lqr=np.zeros((R.shape[0],Q.shape[0]))#
-        P=solve_continuous_are(self.A,self.B,Q,R) #Parametrierung des Reglers aus Ricatti DGL
-        K_lqr=np.linalg.inv(R)@(self.B.transpose()@P)
+        A_d, B_d, C_d, D_d = cont2discrete((self.A, self.B, self.C, self.D), self.Ta)
+        P=solve_discrete_are(A_d,B_d,Q,R) #Parametrierung des Reglers aus Ricatti DGL
+        #K_lqr=np.linalg.inv(R)@(self.B.transpose()@P) #Müsste anders berechnet werden 
+        H = np.linalg.inv(R + B_d.transpose() @ P @ B_d)
+        K_lqr = H @ B_d.transpose() @ P @ A_d
         ######-------!!!!!!Aufgabe Ende!!!!!!-------########
         return K_lqr
 
